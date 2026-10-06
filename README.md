@@ -1,6 +1,6 @@
 # modkit
 
-modkit is an example, minimum reproducible example of a modular approach to service architecture in Python:
+modkit is an example, minimal reproducible example of a modular approach to service architecture in Python:
 
 An example, with the Cache interface:
 ```
