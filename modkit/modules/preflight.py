@@ -13,8 +13,6 @@ async def run_preflight() -> None:
     errors: list[str] = []
     checked: list[str] = []
     for reg in REGISTRIES:
-        if not reg.in_use():
-            continue
         try:
             module = reg.default
             if isinstance(module, Startable):

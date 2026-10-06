@@ -26,13 +26,8 @@ class Vault(Module):
 
 class DynamicCredentialsCapable(Vault):
     """
-    Capability mixin for vault backends that can lease short-lived database
+    Extension for vault backends that can lease short-lived database
     credentials (e.g. HashiCorp Vault's database secrets engine).
-
-    Vault modules that need this optional functionality import this.
-
-    Kept separate from ``Vault`` since not every secret store supports dynamic
-    credentials (e.g. static stores like Azure Key Vault).
     """
 
     @abstractmethod

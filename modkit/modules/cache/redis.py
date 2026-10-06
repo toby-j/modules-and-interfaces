@@ -1,14 +1,11 @@
-"""redis-py backed adapter for the `Cache` port.
-
-Needs a reachable Redis server. Demonstrates `Startable` (async connection
-setup) and `RawClientProvider` (an escape hatch for callers that need the
-real client).
+"""
+redis-py backed adapter for the `Cache` port.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from redis.asyncio import Redis as AsyncRedis
 from redis.exceptions import (
@@ -17,28 +14,27 @@ from redis.exceptions import (
     TimeoutError as RedisTimeoutError,
 )
 
-from modkit.interfaces import ErrorMap, HealthCheck, Module, RawClientProvider, ServiceHealth, Startable
+from modkit.interfaces import ErrorMap, HealthCheck, Module, ServiceHealth, Startable, Cache
 
 logger = logging.getLogger(__name__)
 
 
-class Redis(RawClientProvider, Startable):
+class Redis(Cache, Startable):
     """Cache backed by a real Redis server via redis-py."""
 
     _health_timeout: float = 5.0
 
+    # As we look to find a match, the fallback base error exceptions from the
     health_check_error_map: ClassVar[ErrorMap] = (
         (RedisTimeoutError, ServiceHealth.TIMEOUT),
         (AuthenticationError, ServiceHealth.AUTH_FAILED),
         (RedisConnectionError, ServiceHealth.UNREACHABLE),
     ) + Module.health_check_error_map
 
+
     def __init__(self) -> None:
         super().__init__()
         self._client: AsyncRedis | None = None
-
-    def raw_client(self) -> Any:
-        return self._require_client()
 
     async def start(self) -> None:
         if self._client is not None:

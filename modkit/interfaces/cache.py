@@ -39,20 +39,3 @@ class Cache(Module):
         Remove ``key`` if present; a no-op if it is not.
         """
         ...
-
-
-class RawClientProvider(Cache):
-    """
-    Capability for a cache backend that wraps a real client library and can
-    hand it out for advanced use cases the port doesn't cover.
-
-    Not every backend has one (e.g. the in-process ``memory`` adapter), so
-    this is kept separate from ``Cache`` and checked with ``isinstance``.
-    """
-
-    @abstractmethod
-    def raw_client(self) -> Any:
-        """
-        Return the underlying client object. Requires ``start()`` to have run.
-        """
-        ...

@@ -7,6 +7,8 @@ from modkit.settings import get_settings
 
 _settings = get_settings()
 
+# One registry per interface. An interface can only have one module attached, but there can be many modules to pick from.
+# Lazily imported variables to interact with the interfaces which have the configured module behind.
 cache_registry: Registry[Cache] = Registry(Cache, _settings.cache_backend)
 vault_registry: Registry[Vault] = Registry(Vault, _settings.vault_backend)
 

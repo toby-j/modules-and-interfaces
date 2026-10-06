@@ -14,12 +14,12 @@ import hvac
 import hvac.exceptions
 from requests.exceptions import ConnectionError as RequestsConnectionError, Timeout as RequestsTimeout
 
-from modkit.interfaces import DynamicCredentialsCapable, ErrorMap, HealthCheck, Module, ServiceHealth
+from modkit.interfaces import DynamicCredentialsCapable, ErrorMap, HealthCheck, Module, ServiceHealth, Vault
 
 logger = logging.getLogger(__name__)
 
 
-class HashiCorp(DynamicCredentialsCapable):
+class HashiCorp(Vault, DynamicCredentialsCapable):
     """Vault backend using HashiCorp Vault's KV v2 and database secrets engines."""
 
     _health_timeout: float = 5.0

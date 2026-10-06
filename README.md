@@ -1,76 +1,68 @@
 # modkit
 
-A minimal, reproducible version of a ports-and-adapters module system used in
-a production backend (de-identified: nothing here is specific to that app).
+modkit an example, minimum reproducible example of a modular approach to service architecture in Python:
 
-One interface per capability ("port"), one folder per capability holding
-interchangeable implementations ("adapters"), a generic `Registry[T]` that
-selects exactly one adapter per category from settings, and a
-`run_preflight()` that starts and health-checks everything before the app
-serves traffic.
+- **Nominal Typing** business code is written against a strictly defined interface, which can have many different modules (Redis, CosmosDB) attached.
+- **Simplistic registry design** A module (Redis) is attached to an interface (Cache) which is managed by a single registry. Importing is just 'cache_registry.default'.
+- **Preflight health checks** every selected module can be easily health-checked before usage
+- **Modules are just files** to create a new modules, you just simply create a new file and satisfy the interface you want your module to attach to.
 
-| Layer | File | Job |
-|---|---|---|
-| Base contract | `interfaces/module.py` | `Module`, `Startable`, `ServiceHealth`, `HealthCheck`, `HealthProbe` |
-| Port | `interfaces/cache.py`, `interfaces/vault.py` | Capability ABC + `category`; optional extension ports (`RawClientProvider`, `DynamicCredentialsCapable`) |
-| Adapter | `modules/<category>/*.py` | Concrete impl; the filename *is* the registry name |
-| Composition | `modules/registry.py`, `modules/__init__.py`, `modules/preflight.py`, `environments.py`, `settings.py` | Discover, select, validate, start |
-| Demo | `app.py` | Business logic that only ever sees a port, never a backend name |
+---
 
-## Categories in this example
+## Prerequisites
 
-| Category | Port | Adapter |
-|---|---|---|
-| `cache` | `Cache` | `REDIS` (redis-py) |
-| `vault` | `Vault` | `HASHICORP` (HashiCorp Vault) |
+1. [UV](https://docs.astral.sh/uv/getting-started/installation/)
+2. Python (tested on 3.14 and on MacOS)
+3. Docker
 
-Both adapters need a reachable server. Adapters are only imported the moment
-a registry actually resolves one (`registry.default`), never eagerly.
+## Setup
 
-## Run
-
-```bash
+1. Install the dependencies and create the virtual environment
+```shell
 uv sync
-
-# quick throwaway servers for the demo
-docker run -d --name modkit-redis -p 6379:6379 redis:7-alpine
-docker run -d --name modkit-vault -p 8200:8200 --cap-add=IPC_LOCK \
-  -e VAULT_DEV_ROOT_TOKEN_ID=root-token \
-  -e VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200 \
-  hashicorp/vault:1.17
-
-VAULT_TOKEN=root-token CACHE_BACKEND=REDIS VAULT_BACKEND=HASHICORP \
-  uv run python -m modkit.app
-
-# or via a deployment profile instead of explicit backend names
-VAULT_TOKEN=root-token DEPLOYMENT_ENVIRONMENT=PRODUCTION \
-  uv run python -m modkit.app
-
-# preflight failure demo: point at nothing
-uv run python -m modkit.app
-
-# invalid selection demo
-CACHE_BACKEND=MONGO VAULT_BACKEND=HASHICORP uv run python -m modkit.app
-
-docker rm -f modkit-redis modkit-vault
 ```
 
-## The pattern, in short
+2. Spin up the docker containers
 
-1. **A module is just a file.** Drop `modules/cache/memcached.py` in and
-   `MEMCACHED` is a selectable backend - the registry discovers it by
-   filename, no registration step.
-2. **Nominal typing.** Business code is written against `Cache`, never
-   `Redis`; `cache_registry.default` returns *something* that satisfies
-   the port.
-3. **Capabilities, not backend branching.** Extra behaviour some adapters
-   support (`RawClientProvider.raw_client()`,
-   `DynamicCredentialsCapable.dynamic_credentials()`) lives on separate
-   mixins, checked with `isinstance`, instead of `if backend == "redis"`.
-4. **Preflight gates startup.** `run_preflight()` starts and health-checks
-   every selected module before the app does anything else; a single
-   unreachable dependency fails fast with a clear message.
-5. **Deployment profiles lock combinations.** `DEPLOYMENT_ENVIRONMENT`
-   pins every `*_backend` to a known-good set (`environments.py`), so a
-   restricted environment can't accidentally be configured with a backend
-   it isn't allowed to use.
+```shell
+docker compose up
+```
+
+This will create a redis, postgres and a hashicorp vault container on your local machine.
+
+## Usage
+
+To run the entrypoint:
+
+```shell
+cd modkit
+uv run main.py
+```
+
+You should see that each module is registered, the pre-flight checks passed and a report of their health checks.
+
+### Adding a new module
+
+This architecture is designed to be easily extended on and different software projects.
+
+1. Create a new folder in `modules` and a file inside, with the name of your new module.
+2. Inherit the interface, such as Cache and implement each of the required abstract methods, including the health check.
+3. If it's for an existing interface, edit or create the environment variables <interface_backend> and make sure the registry is created in `modules/__init__.py`.
+4. Optional: `run_preflight()` to check that your new module is imported and the health_check passes.
+4. You're now ready to use your new module in your codebase, by importing `<inteface>_registry.default` 🎉
+
+### Adding an interface
+
+Each interface is a set of rules we can use to abstract away complex logic of individual services, like Redis, CosmosDB, MongoDB etc..
+Often, the main application code needs to perform the same task no matter what service is configured on the backend.
+
+The interface definition is what is exposed to the main codebase through the registry, so you define your functions and properties that it will need to use.
+
+1. Create a new file in `modkit/interfaces` and create a class named your new interface. It must import the Module class, which every module must implement.
+2. Decide and create your abstract methods. This will depend on what your application needs to do using these services.
+3. We now need to give the new interface a registry so the core application can use it. Add a line to `modules/__init__.py` for example:
+
+```python
+<new_interface>_registry: Registry[<NewInterface>] = Registry(<NewModule>, _settings.<NewModule>_backend)
+```
+4. This can now be imported using `<new_interface>_registry.default` 🎉

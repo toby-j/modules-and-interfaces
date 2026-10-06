@@ -14,22 +14,19 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Module)
 
-
 class Registry(Generic[T]):
     """Discovers adapters in `modules/<category>/` and returns them typed as `T`.
 
-    Exactly one adapter per category is active. You cannot have two caches.
+    Exactly one adapter per category is active. You cannot have two caches for example.
 
     :param interface: the port this registry serves (its ``category`` picks the folder)
-    :param backend: name of the adapter to activate, usually read straight from settings.
-        ``None`` means "not configured yet" - the registry can still be imported and
-        inspected (``available``), it just refuses to resolve a default.
+    :param module: name of the adapter to activate, usually read straight from settings.
     """
 
-    def __init__(self, interface: type[T], backend: str | None) -> None:
+    def __init__(self, interface: type[T], module: str) -> None:
         self._interface = interface
         self._category = interface.category
-        self._backend = backend
+        self._module = module
         folder = pathlib.Path(__file__).parent / self._category
         self._available = sorted(self._discover(folder)) if folder.is_dir() else []
 
@@ -47,11 +44,12 @@ class Registry(Generic[T]):
     @functools.cache
     def get_class(self, name: str) -> type[T]:
         """Import `modules/<category>/<name>.py` and return its `interface` subclass."""
-        mod = importlib.import_module(f"{__package__}.{self._category}.{name.lower()}")
-        for _, cls in inspect.getmembers(mod, inspect.isclass):
+        module = importlib.import_module(f"{__package__}.{self._category}.{name.lower()}")
+        # We use gradual typing over duck typing, so we use getmembers().
+        for _, cls in inspect.getmembers(module, inspect.isclass):
             if (issubclass(cls, self._interface)
                     and cls is not self._interface
-                    and cls.__module__ == mod.__name__):
+                    and cls.__module__ == module.__name__):
                 return cls
         raise LookupError(f"no {self._interface.__name__} implementation in {self._category}/{name}")
 
@@ -65,20 +63,16 @@ class Registry(Generic[T]):
 
     @property
     def available(self) -> list[str]:
-        """Names discovered in the category folder, e.g. `["MEMORY", "REDIS"]`."""
+        """Names discovered in the category folder, e.g. `["REDIS"]`."""
         return list(self._available)
 
     @property
     def DEFAULT(self) -> str:
         """Name of the active adapter, resolved from the backend given at construction."""
-        if self._backend is None:
-            raise RuntimeError(
-                f"{self._category} must be selected in settings (one of {self._available})"
-            )
-        name = self._backend.upper()
+        name = self._module.upper()
         if name not in self._available:
             raise LookupError(
-                f"{self._backend!r} is not a discovered {self._category} module {self._available}"
+                f"{self._module!r} is not a discovered {self._category} module {self._available}"
             )
         return name
 

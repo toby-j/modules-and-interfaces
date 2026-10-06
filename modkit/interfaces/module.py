@@ -6,9 +6,9 @@ from abc import ABC, abstractmethod
 from enum import StrEnum
 from types import TracebackType
 from typing import ClassVar, TypedDict
+from modkit.settings import get_settings
 
 logger = logging.getLogger(__name__)
-
 
 class ServiceHealth(StrEnum):
     OK = "ok"
@@ -17,19 +17,16 @@ class ServiceHealth(StrEnum):
     AUTH_FAILED = "auth_failed"
     UNKNOWN = "unknown"
 
-
 ErrorMap = tuple[tuple[type[BaseException], ServiceHealth], ...]
-
 
 class HealthCheck(TypedDict):
     healthy: bool
     checks: dict[str, ServiceHealth]
 
-
 class HealthProbe:
     """Async context manager: run a named check, classify anything it raises."""
 
-    def __init__(self, module: "Module", name: str) -> None:
+    def __init__(self, module: Module, name: str) -> None:
         self._module = module
         self.name = name
         self.result: HealthCheck = {"healthy": True, "checks": {name: ServiceHealth.OK}}
@@ -83,7 +80,6 @@ class Module(ABC):
 
     @property
     def settings(self):
-        from modkit.settings import get_settings
         return get_settings()
 
     def classify_health_check_error(self, exc: BaseException) -> ServiceHealth:

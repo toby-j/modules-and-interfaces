@@ -4,7 +4,7 @@ from __future__ import annotations
 from modkit.interfaces.module import (
     ErrorMap, HealthCheck, Module, ServiceHealth, Startable,
 )
-from modkit.interfaces.cache import Cache, RawClientProvider
+from modkit.interfaces.cache import Cache
 from modkit.interfaces.vault import DynamicCredentialsCapable, Vault
 
 __all__ = [
@@ -13,7 +13,6 @@ __all__ = [
     "ErrorMap",
     "HealthCheck",
     "Module",
-    "RawClientProvider",
     "ServiceHealth",
     "Startable",
     "Vault",
