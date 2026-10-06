@@ -2,6 +2,7 @@
 
 modkit is an example, minimum reproducible example of a modular approach to service architecture in Python:
 
+An example, with the Cache interface:
 ```
                   main.py
                      │
@@ -20,8 +21,8 @@ modkit is an example, minimum reproducible example of a modular approach to serv
                      │
                      │ discovers by filename, imports lazily on .default
                      ▼
-        modules/cache/
-        ├── redis.py      -> class Redis(Cache)   [selected: "REDIS"]
+              modules/cache/
+              ├── redis.py      -> class Redis(Cache)   [selected: "REDIS"]
 ```
 
 - **Nominal Typing** business code is written against a strictly defined interface, which can have many different modules (Redis, CosmosDB) attached.
