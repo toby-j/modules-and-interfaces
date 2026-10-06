@@ -22,7 +22,12 @@ An example, with the Cache interface:
                      │ discovers by filename, imports lazily on .default
                      ▼
               modules/cache/
-              ├── redis.py      -> class Redis(Cache)   [selected: "REDIS"]
+              ├── redis.py      -> class Redis(Cache):
+                                         ... redis logic that satisfies the Cache interface
+                     │
+                     │ In the application code (outside of this system)
+                     ▼ 
+           cache = cache_registry.default  <-- returns a Cache instance (with Redis working behind each of Cache's abstract classes)                    
 ```
 
 - **Nominal Typing** business code is written against a strictly defined interface, which can have many different modules (Redis, CosmosDB) attached.
