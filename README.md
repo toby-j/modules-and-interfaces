@@ -71,7 +71,7 @@ You should see that each module is registered, the pre-flight checks passed and 
 
 ### Adding a new module
 
-This architecture is designed to be easily extended on and different software projects.
+This architecture is designed to compartmentalise service logic into their own contained module.
 
 1. Create a new folder in `modules` and a file inside, with the name of your new module.
 2. Inherit the interface, such as Cache and implement each of the required abstract methods, including the health check.
