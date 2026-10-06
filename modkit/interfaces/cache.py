@@ -1,26 +1,14 @@
-"""
-Cache module interface for the modkit backend.
-
-Author: Toby Johnson
-Date: 01 September 2026
-Modified: 02 September 2026
-"""
-
+"""Cache port: a simple key/value store with optional expiry."""
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from abc import abstractmethod
+from typing import Any
 
 from modkit.interfaces.module import Module
 
-if TYPE_CHECKING:
-    from redis.asyncio import Redis
-
 
 class Cache(Module):
-    """
-    Cache solution used for access tokens, session token, any short-lived credentials can be stored here.
-    """
+    """Key/value cache. Every backend must support this minimal contract."""
 
     category = "cache"
 
@@ -52,25 +40,19 @@ class Cache(Module):
         """
         ...
 
-    @abstractmethod
-    async def try_increment(self, key: str, limit: int, ttl_seconds: int) -> bool:
-        """
-        Check if the user has usage left, if they do permit the request otherwise block it.
-        """
-        ...
 
-
-class RawRedisClientProvider(Cache):
+class RawClientProvider(Cache):
     """
-    Capability for a cache backend that can hand out its underlying redis-py
-    client.
+    Capability for a cache backend that wraps a real client library and can
+    hand it out for advanced use cases the port doesn't cover.
 
-    Only needed for Quart's lifecycle session.
+    Not every backend has one (e.g. the in-process ``memory`` adapter), so
+    this is kept separate from ``Cache`` and checked with ``isinstance``.
     """
 
     @abstractmethod
-    def redis_client(self) -> "Redis":
+    def raw_client(self) -> Any:
         """
-        Return the underlying redis-py client. Requires ``start()`` to have run.
+        Return the underlying client object. Requires ``start()`` to have run.
         """
         ...

@@ -1,34 +1,17 @@
-"""
-Vault (generic secrets) module interface for the modkit backend.
-
-To surely access and manage sensitive secrets by key name.
-
-Author: Toby Johnson
-Date: 01 September 2026
-Modified: 02 September 2026
-"""
-
+"""Vault port: read-only access to secrets by path/field."""
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from abc import abstractmethod
 
 from modkit.interfaces.module import Module
-
-if TYPE_CHECKING:
-    from modkit.settings import VaultSettings
 
 
 class Vault(Module):
     """
-    Base interface for Vault storage services.
+    Base interface for secret storage services.
     """
 
     category = "vault"
-
-    @property
-    def vault_settings(self) -> VaultSettings:
-        return self.settings.vault
 
     @abstractmethod
     def get(self, path: str, field: str) -> str:

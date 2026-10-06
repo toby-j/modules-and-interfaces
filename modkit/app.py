@@ -1,12 +1,14 @@
-"""Demo: business logic sees only the port."""
+"""Demo: business logic sees only ports, never a backend name."""
 from __future__ import annotations
 
 import asyncio
 import logging
 
 from modkit.interfaces import Cache, RawClientProvider
-from modkit.modules import cache_registry
+from modkit.modules import cache_registry, vault_registry
 from modkit.modules.preflight import run_preflight
+
+logger = logging.getLogger(__name__)
 
 
 async def remember_greeting(cache: Cache, user: str) -> str:
@@ -23,14 +25,17 @@ async def main() -> None:
     logging.basicConfig(level=logging.INFO)
     await run_preflight()
 
-    cache = cache_registry.default
-    print(f"active cache module: {cache.name}")
-    print(await remember_greeting(cache, "toby"))
-    print(await remember_greeting(cache, "toby"))
+    for reg in (cache_registry, vault_registry):
+        print(f"active {reg.category} module: {reg.default.name}")
 
-    # Capability detection instead of backend branching:
+    cache = cache_registry.default
+    print(await remember_greeting(cache, "ada"))
+    print(await remember_greeting(cache, "ada"))
+
     if isinstance(cache, RawClientProvider):
-        print("this backend exposes a raw client:", cache.raw_client())
+        print("this backend exposes a raw client:", type(cache.raw_client()).__name__)
+    else:
+        print(f"{cache.name} has no raw client to expose")
 
 
 if __name__ == "__main__":

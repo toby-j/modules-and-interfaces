@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 async def run_preflight() -> None:
     errors: list[str] = []
+    checked: list[str] = []
     for reg in REGISTRIES:
+        if not reg.in_use():
+            continue
         try:
             module = reg.default
             if isinstance(module, Startable):
@@ -19,10 +22,12 @@ async def run_preflight() -> None:
             result = await module.health_check()
             if not result["healthy"]:
                 errors.append(f"{reg.category}: unhealthy {result['checks']}")
+            else:
+                checked.append(reg.category)
         except Exception as exc:
             errors.append(f"{reg.category}: {exc}")
 
     if errors:
         raise RuntimeError("Preflight failed:\n" + "\n".join(errors))
 
-    logger.info("preflight_passed: %s", [r.category for r in REGISTRIES])
+    logger.info("preflight_passed: %s", checked)
